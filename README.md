@@ -17,9 +17,13 @@ Stanford CoreNLP ([Download Page](https://stanfordnlp.github.io/CoreNLP/history.
 |v3.8.0.1 | CoreNLP 3.8.0 |
 |v3.9.1.1 | CoreNLP 3.9.1 |
 
-## Installation
+## Fork Details
+This fork allows MacOS users to run the wrapper without root permissions by default.
 
-`pip install stanfordcorenlp`
+This is controlled by the `check_connections=False` flag in instantiating a `StanfordCoreNLP` object.
+
+The `--add-modules java.se.ee` flag is added to support users of Java 9 and above to resolve JAXB dependencies
+as discussed on the [CoreNLP homepage](https://stanfordnlp.github.io/CoreNLP/).
 
 ## Example
 ### Simple Usage
@@ -36,7 +40,7 @@ print 'Named Entities:', nlp.ner(sentence)
 print 'Constituency Parsing:', nlp.parse(sentence)
 print 'Dependency Parsing:', nlp.dependency_parse(sentence)
 
-nlp.close() # Do not forget to close! The backend server will consume a lot memery.
+nlp.close() # Do not forget to close! The backend server will consume a lot memory.
 ```
 
 Output format:

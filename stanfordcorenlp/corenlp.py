@@ -22,7 +22,7 @@ import requests
 
 
 class StanfordCoreNLP:
-    def __init__(self, path_or_host, port=None, memory='4g', lang='en', timeout=1500, quiet=True,
+    def __init__(self, path_or_host, port=None, memory='4g', lang='en', timeout=1500, check_connections=False,quiet=True,
                  logging_level=logging.WARNING):
         self.path_or_host = path_or_host
         self.port = port
@@ -73,16 +73,25 @@ class StanfordCoreNLP:
                 raise IOError(jars.get(
                     self.lang) + ' not exists. You should download and place it in the ' + directory + ' first.')
 
-            # If port not set, auto select
-            if self.port is None:
-                for port_candidate in range(9000, 65535):
-                    if port_candidate not in [conn.laddr[1] for conn in psutil.net_connections()]:
-                        self.port = port_candidate
-                        break
+            if check_connections:
+                try:
+                    # If port not set, auto select
+                    if self.port is None:
+                        for port_candidate in range(9000, 65535):
+                            if port_candidate not in [conn.laddr[1] for conn in psutil.net_connections()]:
+                                self.port = port_candidate
+                                break
 
-            # Check if the port is in use
-            if self.port in [conn.laddr[1] for conn in psutil.net_connections()]:
-                raise IOError('Port ' + str(self.port) + ' is already in use.')
+                    # Check if the port is in use
+                    if self.port in [conn.laddr[1] for conn in psutil.net_connections()]:
+                        raise IOError('Port ' + str(self.port) + ' is already in use.')
+                except PermissionError:
+                    raise PermissionError('scripts need to be run with root permissions.')
+
+            else:
+                if self.port is None:
+                    self.port = 9000
+
 
             # Start native server
             logging.info('Initializing native server...')
@@ -91,7 +100,8 @@ class StanfordCoreNLP:
             java_class = "edu.stanford.nlp.pipeline.StanfordCoreNLPServer"
             class_path = '"{}*"'.format(directory)
 
-            args = [cmd, java_args, '-cp', class_path, java_class, '-port', str(self.port)]
+            args = [cmd, java_args, '--add-modules','java.se.ee','-cp', class_path, java_class, '-port', str(self.port) ,
+                    ]
 
             args = ' '.join(args)
 
@@ -111,10 +121,10 @@ class StanfordCoreNLP:
         # Wait until server starts
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host_name = urlparse(self.url).hostname
-        time.sleep(1)  # OSX, not tested
-        while sock.connect_ex((host_name, self.port)):
-            logging.info('Waiting until the server is available.')
-            time.sleep(1)
+        time.sleep(5)  # OSX, not tested
+        # while sock.connect_ex((host_name, self.port)):
+        #     logging.info('Waiting until the server is available.')
+        #     time.sleep(1)
         logging.info('The server is available.')
 
     def __enter__(self):
